@@ -245,6 +245,15 @@ func (m *metaManager) processUpdate(message model.Message) {
 			sendToCloud(resp)
 			return
 		case constants.ResourceTypeServiceList:
+			meta := &dao.Meta{
+				Key:   resKey,
+				Type:  resType,
+				Value: string(content)}
+			err = dao.InsertOrUpdate(meta)
+			if err != nil {
+				klog.Errorf("Update meta failed, %v", string(content))
+			}
+
 			var svcList []v1.Service
 			err = json.Unmarshal(content, &svcList)
 			if err != nil {

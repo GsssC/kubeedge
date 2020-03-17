@@ -338,6 +338,23 @@ func (dc *DownstreamController) syncService() {
 				} else {
 					klog.V(4).Infof("Send message successfully, operation: %s, resource: %s", msg.GetOperation(), msg.GetResource())
 				}
+
+				msg = model.NewMessage("")
+				// TODO: what should in place of namespace and service when we are sending service list ?
+				resource, err = messagelayer.BuildResource(nodeName, "namespace", common.ResourceTypeServiceList, "service")
+				if err != nil {
+					klog.Warningf("Built message resource failed with error: %s", err)
+				}
+				msg.BuildRouter(constants.EdgeControllerModuleName, constants.GroupResource, resource, model.UpdateOperation)
+				svcs := dc.lc.GetAllServices()
+
+				msg.Content = svcs
+				if err := dc.messageLayer.Send(*msg); err != nil {
+					klog.Warningf("Send message failed with error: %s, operation: %s, resource: %s", err, msg.GetOperation(), msg.GetResource())
+				} else {
+					klog.Infof("Send message successfully, operation: %s, resource: %s", msg.GetOperation(), msg.GetResource())
+				}
+
 				return true
 			})
 		}
