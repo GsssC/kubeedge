@@ -92,7 +92,12 @@ At present, CloudCore is essentially an edge-resource distribution center, which
 #### healthcheck and leadercheck for LoadBalance
 
   We should expose healthcheck service for LoadBalance, as well as wheathe the CloudCore is Leader.
-  
+#### What Leader do
+- Leading
+  - renew the lease resource 
+- be preempted the leader positon
+  - stop serving and turn off.
+  - wait for restart.
 #### What Follower do
 - Following
 
