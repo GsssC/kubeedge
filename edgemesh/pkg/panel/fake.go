@@ -7,31 +7,30 @@ import (
 	"github.com/go-chassis/go-chassis/third_party/forked/afex/hystrix-go/hystrix"
 )
 
-type EdgePanel struct {
+type FakePanel struct {
 }
 
-func (ep *EdgePanel) GetCircuitBreaker(inv invocation.Invocation, serviceType string) (string, hystrix.CommandConfig) {
+func (fp *FakePanel) GetCircuitBreaker(inv invocation.Invocation, serviceType string) (string, hystrix.CommandConfig) {
 	return "", hystrix.CommandConfig{}
 }
 
-func (ep *EdgePanel) GetLoadBalancing(inv invocation.Invocation) control.LoadBalancingConfig {
+func (fp *FakePanel) GetLoadBalancing(inv invocation.Invocation) control.LoadBalancingConfig {
 	return control.LoadBalancingConfig{}
 }
-func (ep *EdgePanel) GetRateLimiting(inv invocation.Invocation, serviceType string) control.RateLimitingConfig {
+func (fp *FakePanel) GetRateLimiting(inv invocation.Invocation, serviceType string) control.RateLimitingConfig {
 	return control.RateLimitingConfig{}
 }
-func (ep *EdgePanel) GetFaultInjection(inv invocation.Invocation) model.Fault {
+func (fp *FakePanel) GetFaultInjection(inv invocation.Invocation) model.Fault {
 	return model.Fault{}
 }
-func (ep *EdgePanel) GetEgressRule() []control.EgressConfig {
+func (fp *FakePanel) GetEgressRule() []control.EgressConfig {
 	return []control.EgressConfig{}
 }
 
 // TODO Remove the init method, because it will cause invalid logs to be printed when the program is running @kadisi
 // init install Plugin
 func init() {
-	control.InstallPlugin("edge", func(options control.Options) control.Panel {
-		return &EdgePanel{}
+	control.InstallPlugin("fake", func(options control.Options) control.Panel {
+		return &FakePanel{}
 	})
-
 }

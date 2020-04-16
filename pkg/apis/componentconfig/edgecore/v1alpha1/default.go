@@ -71,8 +71,6 @@ func NewDefaultEdgeCoreConfig() *EdgeCoreConfig {
 				ImageGCLowThreshold:         constants.DefaultImageGCLowThreshold,
 				MaximumDeadContainersPerPod: constants.DefaultMaximumDeadContainersPerPod,
 				CGroupDriver:                CGroupDriverCGroupFS,
-				CgroupsPerQOS:               true,
-				CgroupRoot:                  constants.DefaultCgroupRoot,
 				NetworkPluginName:           "",
 				CNIConfDir:                  constants.DefaultCNIConfDir,
 				CNIBinDir:                   constants.DefaultCNIBinDir,
@@ -126,11 +124,8 @@ func NewDefaultEdgeCoreConfig() *EdgeCoreConfig {
 				Enable: false,
 			},
 			EdgeMesh: &EdgeMesh{
-				Enable:          true,
-				LBStrategy:      EdgeMeshDefaultLoadBalanceStrategy,
-				ListenInterface: EdgeMeshDefaultInterface,
-				ListenPort:      EdgeMeshDefaultListenPort,
-				SubNet:          EdgeMeshDefaultSubNet,
+				Enable:     true,
+				LBStrategy: LoadBalanceStrategNameRoundRobin,
 			},
 		},
 	}
@@ -166,8 +161,6 @@ func NewMinEdgeCoreConfig() *EdgeCoreConfig {
 				DevicePluginEnabled:   false,
 				GPUPluginEnabled:      false,
 				CGroupDriver:          CGroupDriverCGroupFS,
-				CgroupsPerQOS:         true,
-				CgroupRoot:            constants.DefaultCgroupRoot,
 			},
 			EdgeHub: &EdgeHub{
 				Heartbeat:         15,
