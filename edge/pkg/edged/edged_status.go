@@ -70,6 +70,10 @@ func (e *edged) initialNode() (*v1.Node, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		klog.Errorf("couldn't determine hostname: %v", err)
+		return nil, err
+	}
+	if len(e.nodeName) != 0 {
+		hostname = e.nodeName
 	}
 
 	ip, err := e.getIP()
@@ -153,7 +157,7 @@ func (e *edged) getNodeStatusRequest(node *v1.Node) (*edgeapi.NodeStatusRequest,
 		klog.Infof("Remove capacity for %s", removedResource)
 		delete(node.Status.Capacity, v1.ResourceName(removedResource))
 	}
-
+	e.setNodeStatusDaemonEndpoints(nodeStatus)
 	e.setNodeStatusConditions(nodeStatus)
 	if e.gpuPluginEnabled {
 		err := e.setGPUInfo(nodeStatus)
@@ -170,6 +174,14 @@ func (e *edged) getNodeStatusRequest(node *v1.Node) (*edgeapi.NodeStatusRequest,
 	klog.Infof("Sync VolumesInUse: %v", node.Status.VolumesInUse)
 
 	return nodeStatus, nil
+}
+
+func (e *edged) setNodeStatusDaemonEndpoints(node *edgeapi.NodeStatusRequest) {
+	node.Status.DaemonEndpoints = v1.NodeDaemonEndpoints{
+		KubeletEndpoint: v1.DaemonEndpoint{
+			Port: config.KubeletPort,
+		},
+	}
 }
 
 func (e *edged) setNodeStatusConditions(node *edgeapi.NodeStatusRequest) {
