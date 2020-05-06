@@ -15,7 +15,7 @@ import (
 
 //constants to define server address
 const (
-	ServerAddr = "127.0.0.1"
+	ServerAddr = "0.0.0.0"
 )
 
 //Server is object to define server
@@ -40,5 +40,5 @@ func (s *Server) ListenAndServe(host server.HostInterface, resourceAnalyzer stat
 		Handler:        &handler,
 		MaxHeaderBytes: 1 << 20,
 	}
-	klog.Fatal(server.ListenAndServe())
+	klog.Fatal(server.ListenAndServeTLS(constants.DefaultCertFile, constants.DefaultKeyFile))
 }
