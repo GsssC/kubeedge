@@ -3,8 +3,6 @@ package app
 import (
 	"errors"
 	"fmt"
-	"os"
-
 	"github.com/kubeedge/kubeedge/edge/pkg/edgestream"
 
 	"github.com/mitchellh/go-ps"
@@ -71,15 +69,15 @@ offering HTTP client capabilities to components of cloud to reach HTTP servers r
 			// To help debugging, immediately log version
 			klog.Infof("Version: %+v", version.Get())
 
-			// Check the running environment by default
-			checkEnv := os.Getenv("CHECK_EDGECORE_ENVIRONMENT")
-			if checkEnv != "false" {
-				// Check running environment before run edge core
-				if err := environmentCheck(); err != nil {
-					klog.Fatal(fmt.Errorf("Failed to check the running environment: %v", err))
-				}
-			}
-
+			//// Check the running environment by default
+			//checkEnv := os.Getenv("CHECK_EDGECORE_ENVIRONMENT")
+			//if checkEnv != "false" {
+			//	// Check running environment before run edge core
+			//	if err := environmentCheck(); err != nil {
+			//		klog.Fatal(fmt.Errorf("Failed to check the running environment: %v", err))
+			//	}
+			//}
+			klog.Infoln("stop checking edgecore environment!")
 			registerModules(config)
 			// start all modules
 			core.Run()
