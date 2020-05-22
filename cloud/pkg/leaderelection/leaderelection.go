@@ -45,6 +45,13 @@ func Run(cfg *config.CloudCoreConfig, readyzAdaptor *ReadyzAdaptor) {
 		klog.Warningf("Create Namespace kubeedge failed with error: %s", err)
 		return
 	}
+	err = TryToPatchPodReadinessGate(corev1.ConditionFalse)
+	if err != nil {
+		// Terminate the program gracefully
+		klog.Errorf("Error patching pod readinessGate to false before leaderelection: %v", err)
+		TriggerGracefulShutdown()
+	}
+
 	coreRecorder := coreBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: "CloudCore"})
 	leaderElectionConfig, err := makeLeaderElectionConfig(*cfg.LeaderElection, cli, coreRecorder)
 
@@ -57,14 +64,20 @@ func Run(cfg *config.CloudCoreConfig, readyzAdaptor *ReadyzAdaptor) {
 			// Start all modules,
 			core.StartModules()
 			// Patch PodReadinessGate if program run in pod
-			err := TryToPatchPodReadinessGate()
+			err := TryToPatchPodReadinessGate(corev1.ConditionTrue)
 			if err != nil {
 				// Terminate the program gracefully
-				klog.Errorf("Error patching pod readinessGate: %v", err)
+				klog.Errorf("Error patching pod readinessGate to true after becoming leader: %v", err)
 				TriggerGracefulShutdown()
 			}
 		},
 		OnStoppedLeading: func() {
+			err := TryToPatchPodReadinessGate(corev1.ConditionFalse)
+			if err != nil {
+				// Terminate the program gracefully
+				klog.Errorf("Error patching pod readinessGate to false after leader lost : %v", err)
+				TriggerGracefulShutdown()
+			}
 			// TODO: is it necessary to terminate the program gracefully?
 			//klog.Fatalf("leaderelection lost, rudely terminate program")
 			klog.Errorf("leaderelection lost, gracefully terminate program")
@@ -122,7 +135,7 @@ func makeLeaderElectionConfig(config componentbaseconfig.LeaderElectionConfigura
 }
 
 // Try to patch PodReadinessGate if program runs in pod
-func TryToPatchPodReadinessGate() error {
+func TryToPatchPodReadinessGate(ConditionStatus corev1.ConditionStatus) error {
 	podname, isInPod := os.LookupEnv("CLOUDCORE_POD_NAME")
 	if isInPod {
 		namespace := os.Getenv("CLOUDCORE_POD_NAMESPACE")
@@ -140,7 +153,7 @@ func TryToPatchPodReadinessGate() error {
 			return fmt.Errorf("failed to marshal modified pod %q into JSON: %v", podname, err)
 		}
 		//Todo: Read PodReadinessGate from CloudCore configuration or env
-		condition := corev1.PodCondition{Type: "kubeedge.io/CloudCoreIsLeader", Status: corev1.ConditionTrue}
+		condition := corev1.PodCondition{Type: "kubeedge.io/CloudCoreIsLeader", Status: ConditionStatus}
 		podutil.UpdatePodCondition(&getPod.Status, &condition)
 		newJSON, err := json.Marshal(getPod)
 		patchBytes, err := strategicpatch.CreateTwoWayMergePatch(originalJSON, newJSON, corev1.Pod{})
