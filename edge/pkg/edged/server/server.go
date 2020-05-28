@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 
 	"k8s.io/klog"
 	"k8s.io/kubernetes/pkg/kubelet/server"
@@ -39,6 +40,14 @@ func (s *Server) ListenAndServe(host server.HostInterface, resourceAnalyzer stat
 		Addr:           net.JoinHostPort(ServerAddr, fmt.Sprintf("%d", constants.ServerPort)),
 		Handler:        &handler,
 		MaxHeaderBytes: 1 << 20,
+	}
+	for{
+		_, errCert := os.Stat(constants.DefaultCertFile)
+		_, errKey := os.Stat(constants.DefaultKeyFile)
+		if errCert == nil && errKey == nil{
+			break
+		}
+		klog.Info("Waiting for Cert and Key generating...")
 	}
 	klog.Fatal(server.ListenAndServeTLS(constants.DefaultCertFile, constants.DefaultKeyFile))
 }
