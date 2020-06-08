@@ -344,8 +344,8 @@ func (e *edged) setMemInfo(total, allocated v1.ResourceList) error {
 	if err != nil {
 		return err
 	}
-	totalMem := m / 1024
-	mem := resource.MustParse(strconv.FormatInt(totalMem, 10) + "Mi")
+	//totalMem := m / 1024
+	mem := resource.MustParse(strconv.FormatInt(m, 10) + "Ki")
 	total[v1.ResourceMemory] = mem.DeepCopy()
 
 	if mem.Cmp(reservationMemory) > 0 {
