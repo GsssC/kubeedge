@@ -55,8 +55,6 @@ spec:
           volumeMounts:
             - name: conf
               mountPath: /etc/kubeedge/config
-            - name: certs
-              mountPath: /etc/kubeedge
           env:
             - name: CLOUDCORE_POD_NAME
               valueFrom:
@@ -73,13 +71,3 @@ spec:
         - name: conf
           configMap:
             name: cloudcore
-        - name: certs
-          secret:
-            secretName: cloudcore
-            items:
-              - key: edge.crt
-                path: certs/edge.crt
-              - key: edge.key
-                path: certs/edge.key
-              - key: rootCA.crt
-                path: ca/rootCA.crt

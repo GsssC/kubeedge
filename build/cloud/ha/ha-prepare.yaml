@@ -1,0 +1,158 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubeedge
+  labels:
+    k8s-app: kubeedge
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    k8s-app: kubeedge
+    kubeedge: cloudcore
+  name: cloudcore
+  namespace: kubeedge
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloudcore
+  labels:
+    k8s-app: kubeedge
+    kubeedge: cloudcore
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "nodes/status", "configmaps", "pods", "pods/status", "secrets", "endpoints", "services"]
+    verbs: ["get", "list", "watch", "create", "update"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["delete"]
+  - apiGroups: [""]
+    resources: ["pods/status"]
+    verbs: ["patch"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "create"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update"]
+  - apiGroups: ["devices.kubeedge.io"]
+    resources: ["devices", "devicemodels", "devices/status", "devicemodels/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["reliablesyncs.kubeedge.io"]
+    resources: ["objectsyncs", "clusterobjectsyncs", "objectsyncs/status", "clusterobjectsyncs/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloudcore
+  labels:
+    k8s-app: kubeedge
+    kubeedge: cloudcore
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cloudcore
+subjects:
+  - kind: ServiceAccount
+    name: cloudcore
+    namespace: kubeedge
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: clusterobjectsyncs.reliablesyncs.kubeedge.io
+spec:
+  group: reliablesyncs.kubeedge.io
+  names:
+    kind: ClusterObjectSync
+    plural: clusterobjectsyncs
+  scope: Cluster
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            objectType:
+              description: NodeSelector indicates the binding preferences between
+                devices and nodes. Refer to k8s.io/kubernetes/pkg/apis/core NodeSelector
+                for more details
+              type: string
+            objectName:
+              description: 'Required: The protocol configuration used to connect to
+                the device.'
+              type: string
+        status:
+          properties:
+            objectResourceVersion:
+              description: 'Required: DeviceModelRef is reference to the device model
+                            used as a template to create the device instance.'
+              type: string
+  version: v1alpha1
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: objectsyncs.reliablesyncs.kubeedge.io
+spec:
+  group: reliablesyncs.kubeedge.io
+  names:
+    kind: ObjectSync
+    plural: objectsyncs
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            objectType:
+              description: NodeSelector indicates the binding preferences between
+                devices and nodes. Refer to k8s.io/kubernetes/pkg/apis/core NodeSelector
+                for more details
+              type: string
+            objectName:
+              description: 'Required: The protocol configuration used to connect to
+                the device.'
+              type: string
+        status:
+          properties:
+            objectResourceVersion:
+              description: 'Required: DeviceModelRef is reference to the device model
+                           used as a template to create the device instance.'
+              type: string
+  version: v1alpha1
