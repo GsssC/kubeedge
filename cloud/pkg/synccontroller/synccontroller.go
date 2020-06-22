@@ -6,6 +6,8 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/informers"
@@ -68,6 +70,9 @@ type SyncController struct {
 	deviceLister            devicelister.DeviceLister
 	clusterObjectSyncLister synclister.ClusterObjectSyncLister
 	objectSyncLister        synclister.ObjectSyncLister
+
+	// client
+	crdClient *versioned.Clientset
 }
 
 func newSyncController(enable bool) *SyncController {
@@ -123,6 +128,8 @@ func newSyncController(enable bool) *SyncController {
 		nodeLister:              nodeInformer.Lister(),
 		clusterObjectSyncLister: clusterObjectSyncInformer.Lister(),
 		objectSyncLister:        objectSyncInformer.Lister(),
+
+		crdClient: crdClient,
 	}
 
 	return sctl
@@ -205,6 +212,13 @@ func (sctl *SyncController) manageClusterObjectSync(syncs []*v1alpha1.ClusterObj
 // and generate update and delete events to the edge
 func (sctl *SyncController) manageObjectSync(syncs []*v1alpha1.ObjectSync) {
 	for _, sync := range syncs {
+		nodeName := getNodeName(sync.Name)
+		if err, isGarbage := sctl.objectSyncGarbageCollection(nodeName, sync.Namespace, sync.Name); isGarbage {
+			if err != nil {
+				klog.Errorf("objectSync GC failed, err:%v", err)
+			}
+			continue
+		}
 		switch sync.Spec.ObjectKind {
 		case model.ResourceTypePod:
 			sctl.managePod(sync)
@@ -221,6 +235,28 @@ func (sctl *SyncController) manageObjectSync(syncs []*v1alpha1.ObjectSync) {
 			klog.Errorf("Unsupported object kind: %v", sync.Spec.ObjectKind)
 		}
 	}
+}
+
+// deleteObjectSync deletes the ObjectSyncs
+func (sctl *SyncController) deleteObjectSync(resourceNamespace, objectSyncName string) (err error) {
+	err = sctl.crdClient.ReliablesyncsV1alpha1().ObjectSyncs(resourceNamespace).Delete(objectSyncName, metav1.NewDeleteOptions(0))
+	return err
+}
+
+// objectSyncGarbageCollection checks whether objectSync needs GC and deletes it
+func (sctl *SyncController) objectSyncGarbageCollection(nodeName, namespace, objectName string) (err error, isGarbage bool) {
+	isGarbage = false
+	_, err = sctl.nodeLister.Get(nodeName)
+	if errors.IsNotFound(err) {
+		isGarbage = true
+		klog.Infof("The node %v is deleted, will delete sync: %v", nodeName, objectName)
+		err = sctl.deleteObjectSync(namespace, objectName)
+		if err != nil {
+			klog.Errorf("Fail to delete objectSync %v of EdgeNode %v which is deleted", objectName, nodeName)
+		}
+		return err, isGarbage
+	}
+	return err, isGarbage
 }
 
 // BuildObjectSyncName builds the name of objectSync/clusterObjectSync
