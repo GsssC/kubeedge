@@ -47,6 +47,8 @@ const (
 	DefaultErrorExitCode = 1
 	// ResourceTypeAll defines resource type all
 	ResourceTypeAll = "all"
+	// FormatTypeWIDE defines output format wide
+	FormatTypeWIDE = "wide"
 )
 
 var (
@@ -181,7 +183,9 @@ func (g *GetOptions) Run(args []string, out io.Writer) error {
 	}
 
 	if g.AllNamespace {
-		g.PrintFlags.EnsureWithNamespace()
+		if err := g.PrintFlags.EnsureWithNamespace(); err != nil {
+			return err
+		}
 	}
 
 	printer, err := g.PrintFlags.ToPrinter()
@@ -195,7 +199,7 @@ func (g *GetOptions) Run(args []string, out io.Writer) error {
 		}
 		return nil
 	}
-	if *g.PrintFlags.OutputFormat == "" || *g.PrintFlags.OutputFormat == "wide" {
+	if *g.PrintFlags.OutputFormat == "" || *g.PrintFlags.OutputFormat == FormatTypeWIDE {
 		return HumanReadablePrint(results, printer, out)
 	}
 
@@ -290,7 +294,6 @@ func (g *GetOptions) queryDataFromDatabase(resType string, resNames []string) ([
 		}
 	default:
 		return nil, fmt.Errorf("Query resource type: %v in namespaces: %v failed. ", resType, g.Namespace)
-
 	}
 
 	return result, nil
@@ -409,6 +412,7 @@ func (g *GetOptions) getSingleResourceFromDatabase(resNS string, resNames []stri
 	return results, nil
 }
 
+// FilterSelector filter resource by selector
 func FilterSelector(data []dao.Meta, selector string) ([]dao.Meta, error) {
 	var results []dao.Meta
 	var jsonValue = make(map[string]interface{})
@@ -481,7 +485,7 @@ func InitDB(driverName, dbName, dataSource string) error {
 func IsExistName(resNames []string, name string) bool {
 	value := false
 	for _, v := range resNames {
-		if strings.Index(name, v) != -1 {
+		if strings.Contains(name, v) {
 			value = true
 		}
 	}
@@ -867,7 +871,6 @@ func ParseMetaToV1List(results []dao.Meta) ([]runtime.Object, error) {
 	list := make([]runtime.Object, 0)
 
 	for _, v := range results {
-
 		if err := json.Unmarshal([]byte(v.Value), &value); err != nil {
 			return nil, err
 		}
