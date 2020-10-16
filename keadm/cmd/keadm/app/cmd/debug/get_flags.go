@@ -158,3 +158,15 @@ func NewHumanPrintFlags() *HumanPrintFlags {
 		ShowKind:   &showKind,
 	}
 }
+
+// EnsureWithNamespace ensures that humanreadable flags return
+// a printer capable of printing with a "namespace" column.
+func (f *PrintFlags) EnsureWithNamespace() error {
+	return f.HumanReadableFlags.EnsureWithNamespace()
+}
+
+// EnsureWithNamespace sets the "WithNamespace" humanreadable option to true.
+func (f *HumanPrintFlags) EnsureWithNamespace() error {
+	f.WithNamespace = true
+	return nil
+}
