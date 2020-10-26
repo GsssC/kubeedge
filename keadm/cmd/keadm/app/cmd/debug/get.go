@@ -664,6 +664,7 @@ func xParseMetaToAPIList(metas []dao.Meta)(res []runtime.Object, err error){
 			if err = json.Unmarshal([]byte(v.Value), &pod); err != nil {
 				return nil, err
 			}
+			klog.Infof("%v\n",pod)
 			podList.Items = append(podList.Items, pod)
 		case constants.ResourceTypeService:
 			var svc api.Service
