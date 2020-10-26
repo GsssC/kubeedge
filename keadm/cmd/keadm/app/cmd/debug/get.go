@@ -668,6 +668,7 @@ func xParseMetaToAPIList(metas []dao.Meta)(res []runtime.Object, err error){
 			klog.Infof("%v\n",pod)
 			fmt.Printf("%+v\n", pod)
 			apiPod := (*api.Pod)(unsafe.Pointer(&pod))
+			fmt.Printf("%d\n",len(apiPod.Spec.ReadinessGates))
 			podList.Items = append(podList.Items, *apiPod)
 		case constants.ResourceTypeService:
 			var svc api.Service
