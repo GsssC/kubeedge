@@ -559,6 +559,7 @@ func xHumanReadablePrint(results []dao.Meta, printer printers.ResourcePrinter, o
 			klog.Fatal(err)
 		}
 	}
+	return nil
 }
 
 // HumanReadablePrint Output data in table form
