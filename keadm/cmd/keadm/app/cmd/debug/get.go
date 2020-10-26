@@ -650,7 +650,7 @@ func HumanReadablePrint(results []dao.Meta, printer printers.ResourcePrinter, ou
 // Only used by HumanReadablePrint.
 func xParseMetaToAPIList(metas []dao.Meta)(res []runtime.Object, err error){
 	var (
-		podList  api.PodList
+		podList  v1.PodList
 		serviceList api.ServiceList
 		secretList api.SecretList
 		configMapList api.ConfigMapList
@@ -660,7 +660,7 @@ func xParseMetaToAPIList(metas []dao.Meta)(res []runtime.Object, err error){
 	for _, v := range metas {
 		switch v.Type {
 		case model.ResourceTypePod:
-			var pod api.Pod
+			var pod v1.Pod
 			if err = json.Unmarshal([]byte(v.Value), &pod); err != nil {
 				return nil, err
 			}
