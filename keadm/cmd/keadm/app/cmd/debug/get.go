@@ -21,6 +21,7 @@ import (
 	"k8s.io/klog"
 	"os"
 	"strings"
+	"unsafe"
 
 	"github.com/astaxie/beego/orm"
 	"github.com/spf13/cobra"
@@ -650,7 +651,7 @@ func HumanReadablePrint(results []dao.Meta, printer printers.ResourcePrinter, ou
 // Only used by HumanReadablePrint.
 func xParseMetaToAPIList(metas []dao.Meta)(res []runtime.Object, err error){
 	var (
-		podList  v1.PodList
+		podList  api.PodList
 		serviceList api.ServiceList
 		secretList api.SecretList
 		configMapList api.ConfigMapList
@@ -666,7 +667,8 @@ func xParseMetaToAPIList(metas []dao.Meta)(res []runtime.Object, err error){
 			}
 			klog.Infof("%v\n",pod)
 			fmt.Printf("%+v\n", pod)
-			podList.Items = append(podList.Items, pod)
+			apiPod := (*api.Pod)(unsafe.Pointer(&pod))
+			podList.Items = append(podList.Items, *apiPod)
 		case constants.ResourceTypeService:
 			var svc api.Service
 			if err = json.Unmarshal([]byte(v.Value), &svc); err != nil {
