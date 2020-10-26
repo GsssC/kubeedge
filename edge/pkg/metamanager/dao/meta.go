@@ -11,6 +11,9 @@ import (
 //constant metatable name reference
 const (
 	MetaTableName = "meta"
+	MetaFieldKey
+	MetaFieldType
+	MetaFieldValue
 )
 
 // Meta metadata object

@@ -200,7 +200,7 @@ func (g *GetOptions) Run(args []string, out io.Writer) error {
 		return nil
 	}
 	if *g.PrintFlags.OutputFormat == "" || *g.PrintFlags.OutputFormat == FormatTypeWIDE {
-		return HumanReadablePrint(results, printer, out)
+		return xHumanReadablePrint(results, printer, out)
 	}
 
 	return JSONYamlPrint(results, printer, out)
@@ -541,6 +541,24 @@ func SplitSelectorParameters(args string) ([]Selector, error) {
 	}
 	return results, nil
 }
+func xHumanReadablePrint(results []dao.Meta, printer printers.ResourcePrinter, out io.Writer) error {
+	res, err:= xParseMetaToAPIList(results)
+	if err != nil {
+		return err
+	}
+	for _, r := range res {
+		table, err := ConvertDataToTable(r)
+		if err != nil{
+			return err
+		}
+		if err := printer.PrintObj(table, out);err!=nil{
+			return err
+		}
+		if _, err := fmt.Fprintln(out); err != nil {
+			return err
+		}
+	}
+}
 
 // HumanReadablePrint Output data in table form
 func HumanReadablePrint(results []dao.Meta, printer printers.ResourcePrinter, out io.Writer) error {
@@ -628,6 +646,58 @@ func HumanReadablePrint(results []dao.Meta, printer printers.ResourcePrinter, ou
 // Only use this type definition to get the table header processing handle,
 // and automatically obtain the ColumnDefinitions of the table according to the type
 // Only used by HumanReadablePrint.
+func xParseMetaToAPIList(metas []dao.Meta)(res []runtime.Object, err error){
+	var (
+		podList  api.PodList
+		serviceList api.ServiceList
+		secretList api.SecretList
+		configMapList api.ConfigMapList
+		endPointsList api.EndpointsList
+		nodeList api.NodeList
+	)
+	for _, v := range metas {
+		switch v.Type {
+		case model.ResourceTypePod:
+			var pod api.Pod
+			if err = json.Unmarshal([]byte(v.Value), &pod); err != nil {
+				return nil, err
+			}
+			podList.Items = append(podList.Items, pod)
+		case constants.ResourceTypeService:
+			var svc api.Service
+			if err = json.Unmarshal([]byte(v.Value), &svc); err != nil {
+				return nil, err
+			}
+			serviceList.Items = append(serviceList.Items, svc)
+		case model.ResourceTypeSecret:
+			var secret api.Secret
+			if err = json.Unmarshal([]byte(v.Value), &secret); err != nil {
+				return nil, err
+			}
+			secretList.Items = append(secretList.Items, secret)
+		case model.ResourceTypeConfigmap:
+			var cm api.ConfigMap
+			if err = json.Unmarshal([]byte(v.Value), &cm); err != nil {
+				return nil, err
+			}
+			configMapList.Items = append(configMapList.Items, cm)
+		case constants.ResourceTypeEndpoints:
+			var ep api.Endpoints
+			if err = json.Unmarshal([]byte(v.Value), &ep); err != nil {
+				return nil, err
+			}
+			endPointsList.Items = append(endPointsList.Items, ep)
+		case model.ResourceTypeNode:
+			var no api.Node
+			if err = json.Unmarshal([]byte(v.Value), &no); err != nil {
+				return nil, err
+			}
+			nodeList.Items = append(nodeList.Items, no)
+		}
+	}
+	res = append(res, &podList, &serviceList, &secretList, &configMapList, &endPointsList,&nodeList)
+	return
+}
 func ParseMetaToAPIList(results []dao.Meta) (*api.PodList, *api.ServiceList, *api.SecretList, *api.ConfigMapList, *api.EndpointsList, *api.NodeList, error) {
 	podList := &api.PodList{}
 	serviceList := &api.ServiceList{}
