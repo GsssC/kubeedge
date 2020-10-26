@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"k8s.io/klog"
 	"os"
 	"strings"
 
@@ -544,18 +545,18 @@ func SplitSelectorParameters(args string) ([]Selector, error) {
 func xHumanReadablePrint(results []dao.Meta, printer printers.ResourcePrinter, out io.Writer) error {
 	res, err:= xParseMetaToAPIList(results)
 	if err != nil {
-		return err
+		klog.Fatal(err)
 	}
 	for _, r := range res {
 		table, err := ConvertDataToTable(r)
 		if err != nil{
-			return err
+			klog.Fatal(err)
 		}
 		if err := printer.PrintObj(table, out);err!=nil{
-			return err
+			klog.Fatal(err)
 		}
 		if _, err := fmt.Fprintln(out); err != nil {
-			return err
+			klog.Fatal(err)
 		}
 	}
 }
