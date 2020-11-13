@@ -17,7 +17,7 @@ type ModuleContext interface {
 // MessageContext is interface for message syncing
 type MessageContext interface {
 	// async mode
-	Send(module string, message model.Message)
+	Send(message model.Message)
 	Receive(module string) (model.Message, error)
 	// sync mode
 	SendSync(module string, message model.Message, timeout time.Duration) (model.Message, error)

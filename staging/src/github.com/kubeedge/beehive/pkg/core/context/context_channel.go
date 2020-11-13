@@ -55,8 +55,11 @@ func (ctx *ChannelContext) Cleanup(module string) {
 	}
 }
 
+func (ctx *ChannelContext) Unicast(message model.Message){
+	ctx.Send(message)
+}
 // Send send msg to a module. Todo: do not stuck
-func (ctx *ChannelContext) Send(module string, message model.Message) {
+func (ctx *ChannelContext) Send(message model.Message) {
 	// avoid exception because of channel closing
 	// TODO: need reconstruction
 	defer func() {
@@ -65,11 +68,11 @@ func (ctx *ChannelContext) Send(module string, message model.Message) {
 		}
 	}()
 
-	if channel := ctx.getChannel(module); channel != nil {
+	if channel := ctx.getChannel(message.GetDest()); channel != nil {
 		channel <- message
 		return
 	}
-	klog.Warningf("Get bad module name :%s when send message, do nothing", module)
+	klog.Warningf("Get bad dest module:%s when send message, do nothing", message.GetDest())
 }
 
 // Receive msg from channel of module

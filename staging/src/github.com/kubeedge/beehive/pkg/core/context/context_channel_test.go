@@ -21,7 +21,7 @@ func TestSendSync(t *testing.T) {
 
 	msg, err := Receive("test_dest")
 	fmt.Printf("receive msg: %v, error: %v\n", msg, err)
-	resp := msg.NewRespByMessage(&msg, "how are you")
+	resp := msg.NewRespByMessage(&msg, "test_dest","how are you")
 	SendResp(*resp)
 
 	time.Sleep(5 * time.Second)

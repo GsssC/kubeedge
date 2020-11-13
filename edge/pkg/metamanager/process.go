@@ -128,7 +128,7 @@ func (m *metaManager) processInsert(message model.Message) {
 	var err error
 	var content []byte
 	switch message.GetContent().(type) {
-	case []uint8:
+	case []byte:
 		content = message.GetContent().([]byte)
 	default:
 		content, err = json.Marshal(message.GetContent())

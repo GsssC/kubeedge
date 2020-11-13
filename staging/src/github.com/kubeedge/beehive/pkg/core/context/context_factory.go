@@ -68,7 +68,7 @@ func Cleanup(module string) {
 }
 
 // Send the message
-func Send(module string, message model.Message) {
+func Send(message model.Message) {
 	context.messageContext.Send(module, message)
 }
 

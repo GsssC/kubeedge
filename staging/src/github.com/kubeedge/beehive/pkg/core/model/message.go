@@ -28,6 +28,8 @@ const (
 type Message struct {
 	Header  MessageHeader `json:"header"`
 	Router  MessageRoute  `json:"route,omitempty"`
+	// Meta save the meta info of message content
+	ContentMeta ResourceMeta `json:"ResourceMeta,omitempty"`
 	Content interface{}   `json:"content"`
 }
 
@@ -35,84 +37,104 @@ type Message struct {
 type MessageRoute struct {
 	// where the message come from
 	Source string `json:"source,omitempty"`
-	// where the message will broadcast to
-	Group string `json:"group,omitempty"`
-
-	// what's the operation on resource
-	Operation string `json:"operation,omitempty"`
-	// what's the resource want to operate
-	Resource string `json:"resource,omitempty"`
+	// which module/group the message will send to
+	Dest string `json:"source,omitempty"`
+	// is the message unicast or broadcast
+	IsBroadcast bool `json:"IsBroadcast,omitempty"`
 }
 
 // MessageHeader defines message header details
 type MessageHeader struct {
 	// the message uuid
 	ID string `json:"msg_id"`
-	// the response message parentid must be same with message received
+	// parentID  means messages is a response message or not
 	// please use NewRespByMessage to new response message
 	ParentID string `json:"parent_msg_id,omitempty"`
 	// the time of creating
 	Timestamp int64 `json:"timestamp"`
-	// specific resource version for the message, if any.
-	// it's currently backed by resource version of the k8s object saved in the Content field.
-	// kubeedge leverages the concept of message resource version to achieve reliable transmission.
-	ResourceVersion string `json:"resourceversion,omitempty"`
-	// the flag will be set in sendsync
+	// Is the message sync or async
 	Sync bool `json:"sync,omitempty"`
 }
 
-// BuildRouter sets route and resource operation in message
-func (msg *Message) BuildRouter(source, group, res, opr string) *Message {
-	msg.SetRoute(source, group)
-	msg.SetResourceOperation(res, opr)
-	return msg
+type ResourceMeta struct{
+	Namespace string `json:"namespace,omitempty"`
+	Type string `json:"type,omitempty"`
+	Name string `json:"name,omitempty"`
+	Operation string `json:"operation,omitempty"`
+	ResourceVersion string `json:"resourceVersion,omitempty"`
 }
 
-// SetResourceOperation sets router resource and operation in message
-func (msg *Message) SetResourceOperation(res, opr string) *Message {
-	msg.Router.Resource = res
-	msg.Router.Operation = opr
+// SetHeader builds message header. You can also use for updating message header
+func (msg *Message) SetHeaderRaw(ID, parentID string, timestamp int64) *Message {
+	msg.Header.ID = ID
+	msg.Header.ParentID = parentID
+	msg.Header.Timestamp = timestamp
 	return msg
 }
-
-// SetRoute sets router source and group in message
-func (msg *Message) SetRoute(source, group string) *Message {
+func (msg *Message) SetHeader(header MessageHeader) *Message {
+	msg.Header = header
+	return msg
+}
+// SetRouteRaw sets router info in message
+func (msg *Message) SetRouterRaw(source, dest string, isBroadcast bool) *Message {
 	msg.Router.Source = source
-	msg.Router.Group = group
+	msg.Router.Dest = dest
+	msg.Router.IsBroadcast = isBroadcast
 	return msg
+}
+func (msg *Message) SetRouter(router MessageRoute) *Message {
+	msg.Router = router
+	return msg
+}
+
+// SetContentMetaRaw sets content meta info in message
+func (msg *Message) SetContentMetaRaw(ns,ty,name,opr,resv  string) *Message{
+	msg.ContentMeta.Namespace = ns
+	msg.ContentMeta.Type = ty
+	msg.ContentMeta.Name = name
+	msg.ContentMeta.Operation = opr
+	msg.ContentMeta.ResourceVersion = resv
+	return msg
+}
+
+func (msg *Message) SetContentMeta(meta ResourceMeta) *Message {
+	msg.ContentMeta = meta
+	return msg
+}
+
+//FillBody fills message  content that you want to send
+func (msg *Message) FillBody(content interface{}) *Message {
+	msg.Content = content
+	return msg
+}
+
+//GetContent returns header
+func (msg *Message) GetHeader() MessageHeader{
+	return msg.Header
+}
+
+//GetContent returns router
+func (msg *Message) GetRouter() MessageRoute{
+	return msg.Router
+}
+
+//GetContent returns contentMeta
+func (msg *Message) GetContentMeta() ResourceMeta{
+	return msg.ContentMeta
+}
+
+//GetContent returns message content
+func (msg *Message) GetContent() interface{} {
+	return msg.Content
 }
 
 // SetResourceVersion sets resource version in message header
 func (msg *Message) SetResourceVersion(resourceVersion string) *Message {
-	msg.Header.ResourceVersion = resourceVersion
+	msg.ContentMeta.ResourceVersion = resourceVersion
 	return msg
 }
 
-// IsSync : msg.Header.Sync will be set in sendsync
-func (msg *Message) IsSync() bool {
-	return msg.Header.Sync
-}
-
-// GetResource returns message route resource
-func (msg *Message) GetResource() string {
-	return msg.Router.Resource
-}
-
-// GetOperation returns message route operation string
-func (msg *Message) GetOperation() string {
-	return msg.Router.Operation
-}
-
-// GetSource returns message route source string
-func (msg *Message) GetSource() string {
-	return msg.Router.Source
-}
-
-// GetGroup returns message route group
-func (msg *Message) GetGroup() string {
-	return msg.Router.Group
-}
-
+// Get Header
 // GetID returns message ID
 func (msg *Message) GetID() string {
 	return msg.Header.ID
@@ -127,34 +149,46 @@ func (msg *Message) GetParentID() string {
 func (msg *Message) GetTimestamp() int64 {
 	return msg.Header.Timestamp
 }
-
-//GetContent returns message content
-func (msg *Message) GetContent() interface{} {
-	return msg.Content
+// IsSync : show the msg is sync or async
+func (msg *Message) IsSync() bool {
+	return msg.Header.Sync
 }
 
-//GetResourceVersion returns message resource version
+// Get Router
+// GetSource returns message route source string
+func (msg *Message) GetSource() string {
+	return msg.Router.Source
+}
+// GetDest returns message route group
+func (msg *Message) GetDest() string {
+	return msg.Router.Dest
+}
+
+func (msg *Message) IsBroadcast()bool{
+	return msg.Router.IsBroadcast
+}
+
+// Get ContentMeta
+func (msg *Message) GetContentNS() string {
+	return msg.ContentMeta.Namespace
+}
+
+func (msg *Message) GetContentType() string {
+	return msg.ContentMeta.Type
+}
+func (msg *Message) GetContentName() string {
+	return msg.ContentMeta.Name
+}
 func (msg *Message) GetResourceVersion() string {
-	return msg.Header.ResourceVersion
+	return msg.ContentMeta.ResourceVersion
+}
+func (msg *Message) GetOperation() string {
+	return msg.ContentMeta.Operation
 }
 
 //UpdateID returns message object updating its ID
 func (msg *Message) UpdateID() *Message {
 	msg.Header.ID = uuid.NewV4().String()
-	return msg
-}
-
-// BuildHeader builds message header. You can also use for updating message header
-func (msg *Message) BuildHeader(ID, parentID string, timestamp int64) *Message {
-	msg.Header.ID = ID
-	msg.Header.ParentID = parentID
-	msg.Header.Timestamp = timestamp
-	return msg
-}
-
-//FillBody fills message  content that you want to send
-func (msg *Message) FillBody(content interface{}) *Message {
-	msg.Content = content
 	return msg
 }
 
@@ -178,21 +212,25 @@ func NewMessage(parentID string) *Message {
 // only update message id
 func (msg *Message) Clone(message *Message) *Message {
 	msgID := uuid.NewV4().String()
-	return NewRawMessage().BuildHeader(msgID, message.GetParentID(), message.GetTimestamp()).
-		BuildRouter(message.GetSource(), message.GetGroup(), message.GetResource(), message.GetOperation()).
+	return NewRawMessage().
+		SetHeaderRaw(msgID, message.GetParentID(), message.GetTimestamp()).
+		SetRouter(msg.GetRouter()).
 		FillBody(message.GetContent())
 }
 
 // NewRespByMessage returns a new response message by a message received
-func (msg *Message) NewRespByMessage(message *Message, content interface{}) *Message {
-	return NewMessage(message.GetID()).SetRoute(message.GetSource(), message.GetGroup()).
-		SetResourceOperation(message.GetResource(), ResponseOperation).
+func (msg *Message) NewRespByMessage(message *Message, self string, content interface{}) *Message {
+	return NewMessage(message.GetID()).
+		SetRouterRaw(self, message.GetSource(),message.IsBroadcast()).
+		SetContentMeta(message.GetContentMeta()).
 		FillBody(content)
 }
 
 // NewErrorMessage returns a new error message by a message received
 func NewErrorMessage(message *Message, errContent string) *Message {
+	meta := message.GetContentMeta()
+	meta.Operation = ResponseErrorOperation
 	return NewMessage(message.Header.ParentID).
-		SetResourceOperation(message.Router.Resource, ResponseErrorOperation).
+		SetContentMeta(meta).
 		FillBody(errContent)
 }
