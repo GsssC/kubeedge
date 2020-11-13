@@ -60,6 +60,7 @@ type ResourceMeta struct{
 	Namespace string `json:"namespace,omitempty"`
 	Type string `json:"type,omitempty"`
 	Name string `json:"name,omitempty"`
+	NodeName string `json:"nodeName,omitempty"`
 	Operation string `json:"operation,omitempty"`
 	ResourceVersion string `json:"resourceVersion,omitempty"`
 }
@@ -87,18 +88,55 @@ func (msg *Message) SetRouter(router MessageRoute) *Message {
 	return msg
 }
 
+func (msg *Message) SetSource(source string) *Message {
+	msg.Router.Source = source
+	return msg
+}
+
+func (msg *Message) SetDest(dest string) *Message {
+	msg.Router.Dest = dest
+	return msg
+}
+
 // SetContentMetaRaw sets content meta info in message
-func (msg *Message) SetContentMetaRaw(ns,ty,name,opr,resv  string) *Message{
+func (msg *Message) SetContentMetaRaw(ns,ty,name,nodename,op,resv  string) *Message{
 	msg.ContentMeta.Namespace = ns
 	msg.ContentMeta.Type = ty
 	msg.ContentMeta.Name = name
-	msg.ContentMeta.Operation = opr
+	msg.ContentMeta.NodeName = nodename
+	msg.ContentMeta.Operation = op
 	msg.ContentMeta.ResourceVersion = resv
 	return msg
 }
 
 func (msg *Message) SetContentMeta(meta ResourceMeta) *Message {
 	msg.ContentMeta = meta
+	return msg
+}
+
+func (msg *Message) SetContentNS(ns string) *Message{
+	msg.ContentMeta.Namespace = ns
+	return msg
+}
+func (msg *Message) SetContentType(ty string) *Message{
+	msg.ContentMeta.Type = ty
+	return msg
+}
+func (msg *Message) SetContentName(name string) *Message{
+	msg.ContentMeta.Name = name
+	return msg
+}
+
+func (msg *Message) SetContentNodeName(nn string) *Message{
+	msg.ContentMeta.NodeName = nn
+	return msg
+}
+func (msg *Message) SetContentOperation(op string) *Message{
+	msg.ContentMeta.Operation = op
+	return msg
+}
+func (msg *Message) SetResourceVersion(rv string) *Message{
+	msg.ContentMeta.ResourceVersion = rv
 	return msg
 }
 
@@ -126,12 +164,6 @@ func (msg *Message) GetContentMeta() ResourceMeta{
 //GetContent returns message content
 func (msg *Message) GetContent() interface{} {
 	return msg.Content
-}
-
-// SetResourceVersion sets resource version in message header
-func (msg *Message) SetResourceVersion(resourceVersion string) *Message {
-	msg.ContentMeta.ResourceVersion = resourceVersion
-	return msg
 }
 
 // Get Header
@@ -179,11 +211,18 @@ func (msg *Message) GetContentType() string {
 func (msg *Message) GetContentName() string {
 	return msg.ContentMeta.Name
 }
+func (msg *Message) GetContentNodeName() string {
+	return msg.ContentMeta.NodeName
+}
 func (msg *Message) GetResourceVersion() string {
 	return msg.ContentMeta.ResourceVersion
 }
 func (msg *Message) GetOperation() string {
 	return msg.ContentMeta.Operation
+}
+
+func (msg *Message) GetResource() string{
+	return ""
 }
 
 //UpdateID returns message object updating its ID

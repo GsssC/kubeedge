@@ -69,7 +69,11 @@ func Cleanup(module string) {
 
 // Send the message
 func Send(message model.Message) {
-	context.messageContext.Send(module, message)
+	if message.IsBroadcast(){
+		context.messageContext.SendToGroup(message)
+	} else {
+		context.messageContext.Send(message)
+	}
 }
 
 // Receive the message
@@ -86,9 +90,8 @@ func Receive(module string) (model.Message, error) {
 // SendSync sends message in sync mode
 // module: the destination of the message
 // timeout: if <= 0 using default value(30s)
-func SendSync(module string,
-	message model.Message, timeout time.Duration) (model.Message, error) {
-	resp, err := context.messageContext.SendSync(module, message, timeout)
+func SendSync(message model.Message, timeout time.Duration) (model.Message, error) {
+	resp, err := context.messageContext.SendSync(message, timeout)
 	if err == nil {
 		return resp, nil
 	}
@@ -103,7 +106,7 @@ func SendResp(resp model.Message) {
 
 // SendToGroup broadcasts the message to all of group members
 func SendToGroup(moduleType string, message model.Message) {
-	context.messageContext.SendToGroup(moduleType, message)
+	context.messageContext.SendToGroup(message)
 }
 
 // sendToGroupSync broadcasts the message to all of group members in sync mode

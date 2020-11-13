@@ -91,7 +91,7 @@ func getAnonChannelName(msgID string) string {
 }
 
 // SendSync sends message in a sync way
-func (ctx *ChannelContext) SendSync(module string, message model.Message, timeout time.Duration) (model.Message, error) {
+func (ctx *ChannelContext) SendSync(message model.Message, timeout time.Duration) (model.Message, error) {
 	// avoid exception because of channel closing
 	// TODO: need reconstruction
 	defer func() {
@@ -99,6 +99,7 @@ func (ctx *ChannelContext) SendSync(module string, message model.Message, timeou
 			klog.Warningf("Recover when sendsync message, exception: %+v", exception)
 		}
 	}()
+	module := message.GetDest()
 
 	if timeout <= 0 {
 		timeout = MessageTimeoutDefault
@@ -162,7 +163,7 @@ func (ctx *ChannelContext) SendResp(message model.Message) {
 }
 
 // SendToGroup send msg to modules. Todo: do not stuck
-func (ctx *ChannelContext) SendToGroup(moduleType string, message model.Message) {
+func (ctx *ChannelContext) SendToGroup(message model.Message) {
 	// avoid exception because of channel closing
 	// TODO: need reconstruction
 	defer func() {
@@ -171,6 +172,7 @@ func (ctx *ChannelContext) SendToGroup(moduleType string, message model.Message)
 		}
 	}()
 
+	moduleType := message.GetDest()
 	send := func(ch chan model.Message) {
 		select {
 		case ch <- message:
@@ -192,7 +194,7 @@ func (ctx *ChannelContext) SendToGroup(moduleType string, message model.Message)
 
 // SendToGroupSync : broadcast the message to echo module channel, the module send response back anon channel
 // check timeout and the size of anon channel
-func (ctx *ChannelContext) SendToGroupSync(moduleType string, message model.Message, timeout time.Duration) error {
+func (ctx *ChannelContext) SendToGroupSync(message model.Message, timeout time.Duration) error {
 	// avoid exception because of channel closing
 	// TODO: need reconstruction
 	defer func() {
@@ -200,6 +202,7 @@ func (ctx *ChannelContext) SendToGroupSync(moduleType string, message model.Mess
 			klog.Warningf("Recover when sendToGroupsync message, exception: %+v", exception)
 		}
 	}()
+	moduleType := message.GetDest()
 
 	if timeout <= 0 {
 		timeout = MessageTimeoutDefault

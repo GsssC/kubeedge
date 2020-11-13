@@ -10,8 +10,6 @@ import (
 type MessageLayer interface {
 	Send(message model.Message) error
 	Receive() (model.Message, error)
-	Response(message model.Message) error
-}
 
 // ContextMessageLayer build on context
 type ContextMessageLayer struct {
@@ -22,7 +20,7 @@ type ContextMessageLayer struct {
 
 // Send message
 func (cml *ContextMessageLayer) Send(message model.Message) error {
-	beehiveContext.Send(cml.SendModuleName, message)
+	beehiveContext.Send(*message.SetDest(cml.SendModuleName))
 	return nil
 }
 
@@ -33,7 +31,7 @@ func (cml *ContextMessageLayer) Receive() (model.Message, error) {
 
 // Response message
 func (cml *ContextMessageLayer) Response(message model.Message) error {
-	beehiveContext.Send(cml.ResponseModuleName, message)
+	beehiveContext.Send(*message.SetDest(cml.SendModuleName))
 	return nil
 }
 

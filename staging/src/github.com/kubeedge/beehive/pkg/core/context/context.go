@@ -20,11 +20,11 @@ type MessageContext interface {
 	Send(message model.Message)
 	Receive(module string) (model.Message, error)
 	// sync mode
-	SendSync(module string, message model.Message, timeout time.Duration) (model.Message, error)
+	SendSync(message model.Message, timeout time.Duration) (model.Message, error)
 	SendResp(message model.Message)
 	// group broadcast
-	SendToGroup(moduleType string, message model.Message)
-	SendToGroupSync(moduleType string, message model.Message, timeout time.Duration) error
+	SendToGroup(message model.Message)
+	SendToGroupSync(message model.Message, timeout time.Duration) error
 }
 
 // Context is global context object

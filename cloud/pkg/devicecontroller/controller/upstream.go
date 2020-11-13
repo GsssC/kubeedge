@@ -87,7 +87,7 @@ func (uc *UpstreamController) dispatchMessage() {
 
 		klog.Infof("Dispatch message: %s", msg.GetID())
 
-		resourceType, err := messagelayer.GetResourceType(msg.GetResource())
+		resourceType := msg.GetContentType()
 		if err != nil {
 			klog.Warningf("Parse message: %s resource type with error: %s", msg.GetID(), err)
 			continue
@@ -116,7 +116,8 @@ func (uc *UpstreamController) updateDeviceStatus() {
 				klog.Warningf("Unmarshall failed due to error %v", err)
 				continue
 			}
-			deviceID, err := messagelayer.GetDeviceID(msg.GetResource())
+			//deviceID, err := messagelayer.GetDeviceID(msg.GetResource())
+			deviceID := msg.GetContentName()
 			if err != nil {
 				klog.Warning("Failed to get device id")
 				continue
@@ -166,7 +167,8 @@ func (uc *UpstreamController) updateDeviceStatus() {
 			}
 			//send confirm message to edge twin
 			resMsg := model.NewMessage(msg.GetID())
-			nodeID, err := messagelayer.GetNodeID(msg)
+			//nodeID, err := messagelayer.GetNodeID(msg)
+			nodeID := msg.GetContentNodeName()
 			if err != nil {
 				klog.Warningf("Message: %s process failure, get node id failed with error: %s", msg.GetID(), err)
 				continue
@@ -176,7 +178,7 @@ func (uc *UpstreamController) updateDeviceStatus() {
 				klog.Warningf("Message: %s process failure, build message resource failed with error: %s", msg.GetID(), err)
 				continue
 			}
-			resMsg.BuildRouter(modules.DeviceControllerModuleName, constants.GroupTwin, resource, model.ResponseOperation)
+			resMsg.SetRouterRaw(modules.DeviceControllerModuleName, constants.GroupTwin,false)
 			resMsg.Content = "OK"
 			err = uc.messageLayer.Response(*resMsg)
 			if err != nil {

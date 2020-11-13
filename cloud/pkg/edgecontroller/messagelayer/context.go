@@ -22,7 +22,7 @@ type ContextMessageLayer struct {
 
 // Send message
 func (cml *ContextMessageLayer) Send(message model.Message) error {
-	beehiveContext.Send(cml.SendModuleName, message)
+	beehiveContext.Send(message)
 	return nil
 }
 
@@ -34,7 +34,7 @@ func (cml *ContextMessageLayer) Receive() (model.Message, error) {
 // Response message
 func (cml *ContextMessageLayer) Response(message model.Message) error {
 	if !config.Config.EdgeSiteEnable {
-		beehiveContext.Send(cml.ResponseModuleName, message)
+		beehiveContext.Send(message)
 	} else {
 		beehiveContext.SendResp(message)
 	}

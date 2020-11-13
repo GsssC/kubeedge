@@ -60,25 +60,21 @@ func (dc *DownstreamController) syncPod() {
 				continue
 			}
 			msg := model.NewMessage("")
-			msg.SetResourceVersion(pod.ResourceVersion)
-			resource, err := messagelayer.BuildResource(pod.Spec.NodeName, pod.Namespace, model.ResourceTypePod, pod.Name)
-			if err != nil {
-				klog.Warningf("built message resource failed with error: %s", err)
-				continue
-			}
-			msg.Content = pod
+			msg.SetContentMetaRaw(pod.Namespace,model.ResourceTypePod,pod.Name,pod.Spec.NodeName,"",pod.ResourceVersion)
+			msg.FillBody(pod)
 			switch e.Type {
 			case watch.Added:
-				msg.BuildRouter(modules.EdgeControllerModuleName, constants.GroupResource, resource, model.InsertOperation)
+				msg.SetContentOperation(model.InsertOperation)
 				dc.lc.AddOrUpdatePod(*pod)
 			case watch.Deleted:
-				msg.BuildRouter(modules.EdgeControllerModuleName, constants.GroupResource, resource, model.DeleteOperation)
+				msg.SetContentOperation(model.DeleteOperation)
 			case watch.Modified:
-				msg.BuildRouter(modules.EdgeControllerModuleName, constants.GroupResource, resource, model.UpdateOperation)
+				msg.SetContentOperation(model.UpdateOperation)
 				dc.lc.AddOrUpdatePod(*pod)
 			default:
 				klog.Warningf("pod event type: %s unsupported", e.Type)
 			}
+			msg.SetRouterRaw(modules.EdgeControllerModuleName, constants.GroupResource,false)
 			if err := dc.messageLayer.Send(*msg); err != nil {
 				klog.Warningf("send message failed with error: %s, operation: %s, resource: %s", err, msg.GetOperation(), msg.GetResource())
 			} else {
@@ -121,15 +117,13 @@ func (dc *DownstreamController) syncConfigMap() {
 			klog.V(4).Infof("there are %d nodes need to sync config map, operation: %s", len(nodes), e.Type)
 			for _, n := range nodes {
 				msg := model.NewMessage("")
-				msg.SetResourceVersion(configMap.ResourceVersion)
-				resource, err := messagelayer.BuildResource(n, configMap.Namespace, model.ResourceTypeConfigmap, configMap.Name)
-				if err != nil {
-					klog.Warningf("build message resource failed with error: %s", err)
-					continue
-				}
-				msg.BuildRouter(modules.EdgeControllerModuleName, constants.GroupResource, resource, operation)
-				msg.Content = configMap
-				err = dc.messageLayer.Send(*msg)
+				//msg.SetResourceVersion(configMap.ResourceVersion)
+				//resource, err := messagelayer.BuildResource(n, configMap.Namespace, model.ResourceTypeConfigmap, configMap.Name)
+				msg.SetContentMetaRaw(configMap.Namespace,model.ResourceTypeConfigmap,configMap.Name,n,"",configMap.ResourceVersion).
+					SetContentOperation(operation).
+					FillBody(configMap)
+				//msg.BuildRouter(modules.EdgeControllerModuleName, constants.GroupResource, resource, operation)
+				err := dc.messageLayer.Send(*msg)
 				if err != nil {
 					klog.Warningf("send message failed with error: %s, operation: %s, resource: %s", err, msg.GetOperation(), msg.GetResource())
 				} else {
