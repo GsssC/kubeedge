@@ -1,0 +1,102 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: order.courier.kubeedge.io
+spec:
+  conversion:
+  group: courier.kubeedge.io
+  names:
+    kind: Order
+    singular: order
+    plural: orders
+  scope: Namespaced
+  subresources:
+    status: {}
+  versions:
+  - storage: true
+    serverd: true
+    deprecated: false
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              id:
+                description: 'Id is a unique number representing a specific order'
+                type: number
+              customer:
+                description: 'Customer is a string value representing who order resource objects'
+                type: object
+                properties:
+                  name:
+                    description: 'name shows the customer name'
+                    type: string
+                  address:
+                    description: 'address shows the customer address'
+                    type: object
+                    properties:
+                      district:
+                        description: 'district is a string value shows which district does the node belong to'
+                        type: string
+                      nodeName:
+                        description: 'nodename is a string value shows which node the resource objects will deliver to'
+                        type: string
+              vendor:
+                description: 'vendor is a string value representing who suppliers resources objects'
+                type: string
+              resoucres:
+                description: 'resources is an array listing resource customer need'
+                type: array
+                items:
+                  type: object
+                  properties:
+                    namespace:
+                      type: string
+                    resourceType:
+                      type: string
+                    resourceName:
+                      type: string
+                    method:
+                      description: 'get, list, watch'
+                      type: string
+          status:
+            properties:
+              phase:
+                properties:
+                  phaseType:
+                    description: 'failed, completed, delivering etc'
+                    type: string
+                  reason:
+                    description: 'why in this phase'
+                    type: string
+                  lastTransitionTime:
+                    type: string
+              resources:
+                description: 'resources is an array listing resource customer received'
+                type: string
+                  properties:
+                    namespace:
+                      type: string
+                    resourceType:
+                      type: string
+                    resourceName:
+                      type: string
+                    resourceVersion:
+                      description: 'resourcesVersion records resources has been delivered'
+                      type: string
+
