@@ -359,6 +359,7 @@ func (dc *DownstreamController) syncEndpoints() {
 			return
 		case e := <-dc.endpointsManager.Events():
 			eps, ok := e.Object.(*v1.Endpoints)
+			klog.Infof("[apiserver-lite]endpoint get meta type:%v,%v,%v",eps.Kind,eps.APIVersion,eps.ResourceVersion)
 			if !ok {
 				klog.Warningf("Object type: %T unsupported", eps)
 				continue
@@ -383,6 +384,7 @@ func (dc *DownstreamController) syncEndpoints() {
 				continue
 			}
 			// send to all nodes
+			ok = true
 			if ok {
 				var listOptions metav1.ListOptions
 				var pods *v1.PodList
@@ -404,6 +406,7 @@ func (dc *DownstreamController) syncEndpoints() {
 					}
 				}
 				dc.lc.EdgeNodes.Range(func(key interface{}, value interface{}) bool {
+					klog.Infof("Edge Node name:%v",key.(string))
 					nodeName, check := key.(string)
 					if !check {
 						klog.Warning("Failed to assert key to sting")
@@ -440,6 +443,7 @@ func (dc *DownstreamController) syncEndpoints() {
 					}
 					return true
 				})
+
 			}
 		}
 	}
@@ -492,6 +496,9 @@ func (dc *DownstreamController) initLocating() error {
 		}
 		dc.lc.UpdateEdgeNode(node.ObjectMeta.Name, status)
 	}
+	// test apiserver-lite
+	dc.lc.UpdateEdgeNode("xiaomi","")
+	//
 
 	if !config.Config.EdgeSiteEnable {
 		pods, err = dc.kubeClient.CoreV1().Pods(v1.NamespaceAll).List(context.Background(), metav1.ListOptions{})
