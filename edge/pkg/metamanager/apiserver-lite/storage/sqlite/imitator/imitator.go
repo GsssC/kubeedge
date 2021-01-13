@@ -181,13 +181,9 @@ func (s *imitator)Watch(ctx context.Context,key string, rev uint64) <-chan watch
 	receiver := watchhook.NewChanReceiver(wch)
 	wh := watchhook.NewWatchHook(key,rev,receiver)
 	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				wh.Stop()
-				return
-			}
-		}
+		<-ctx.Done()
+		wh.Stop()
+		return
 	}()
 	return wch
 }
