@@ -31,6 +31,7 @@ func NewWatchHook(key string,rev uint64,receiver Receiver) *WatchHook {
 		ResourceVersion: rev,
 		Receiver: receiver,
 	}
+	utilruntime.Must(AddHook(wh))
 	return wh
 }
 

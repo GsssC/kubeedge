@@ -180,7 +180,6 @@ func (s *imitator)Watch(ctx context.Context,key string, rev uint64) <-chan watch
 	wch := make (chan watch.Event)
 	receiver := watchhook.NewChanReceiver(wch)
 	wh := watchhook.NewWatchHook(key,rev,receiver)
-	utilruntime.Must(watchhook.AddHook(wh))
 	go func() {
 		for {
 			select {
