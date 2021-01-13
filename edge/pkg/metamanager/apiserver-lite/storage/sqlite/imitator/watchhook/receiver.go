@@ -10,6 +10,7 @@ type ChanReceiver struct {
 }
 
 func (hc *ChanReceiver) Receive(event watch.Event)error{
+	//TODO: recover when hc.ch is closed if panic occurs
 	hc.ch <- event
 	return nil
 }

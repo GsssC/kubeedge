@@ -59,6 +59,7 @@ func (s *imitator) Inject(msg model.Message) {
 
 }
 
+//TODO: filter out insert or update req that the obj's rev is smaller than the stored
 func (s *imitator)InsertOrUpdateObj(ctx context.Context,obj runtime.Object) error{
 	key ,err := apiserverlite.KeyFuncObj(obj)
 	utilruntime.Must(err)
