@@ -4,10 +4,11 @@ import (
 	"context"
 	_ "context"
 	"fmt"
+	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/handlerfactory"
 	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/kubernetes/serializer"
-	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/storage/cacher"
-	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/storage/sqlite"
-	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/storage/sqlite/imitator"
+	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/kubernetes/storage/cacher"
+	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/kubernetes/storage/sqlite"
+	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/kubernetes/storage/sqlite/imitator"
 	"github.com/kubeedge/kubeedge/pkg/apiserverlite"
 	"github.com/kubeedge/kubeedge/pkg/apiserverlite/util"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
@@ -49,6 +50,7 @@ type LiteServer struct{
 	NegotiatedSerializer runtime.NegotiatedSerializer
 	Storage storage.Interface
 	Cacher storage.Interface
+	Factory handlerfactory.Factory
 }
 
 func NewLiteServer() *LiteServer {
@@ -63,6 +65,7 @@ func NewLiteServer() *LiteServer {
 		NegotiatedSerializer:   serializer.NewNegotiatedSerializer(),
 		Storage:                sqlite.New(),
 		Cacher:                 cacher,
+		Factory: handlerfactory.NewFactory(),
 	}
 	return &ls
 }
@@ -79,6 +82,7 @@ func (ls *LiteServer)Start(stopChan <-chan struct{}){
 }
 
 func(ls *LiteServer)BuildBasicHandler()http.Handler{
+	listHandler := ls.Factory.List()
 	h:= http.HandlerFunc(func(w http.ResponseWriter, req *http.Request){
 		ctx := req.Context()
 		reqInfo , ok := apirequest.RequestInfoFrom(ctx)
@@ -89,10 +93,12 @@ func(ls *LiteServer)BuildBasicHandler()http.Handler{
 				ls.cacherRead(w,req)
 				//ls.processRead(w,req)
 			case reqInfo.Verb == "list":
-				ls.cacherList(w,req)
+				listHandler.ServeHTTP(w,req)
+				//ls.cacherList(w,req)
 				//ls.processList(w,req)
 			case reqInfo.Verb == "watch":
-				ls.cacherWatch(w,req)
+				listHandler.ServeHTTP(w,req)
+				//ls.cacherWatch(w,req)
 				//ls.processWatch(w,req)
 			default:
 				ls.processFail(w,req)
@@ -415,6 +421,7 @@ func(ls *LiteServer)processWatch(w http.ResponseWriter, req *http.Request){
 	}
 }
 func(ls *LiteServer)processFail(w http.ResponseWriter,req *http.Request){
+	//TODO: transfer to remote true apiserver
 
 }
 func BuildHandlerChain(handler http.Handler, ls *LiteServer) http.Handler {

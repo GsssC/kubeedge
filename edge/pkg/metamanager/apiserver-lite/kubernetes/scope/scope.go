@@ -2,37 +2,45 @@ package scope
 
 import (
 	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/kubernetes/serializer"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apiserver/pkg/endpoints/handlers"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
-func NewRequestScope (){
+func NewRequestScope () *handlers.RequestScope{
 	requestScope :=handlers.RequestScope{
+		Namer: handlers.ContextBasedNaming{
+			SelfLinker:         meta.NewAccessor(),
+			ClusterScoped:      false,
+			SelfLinkPathPrefix: "",
+			SelfLinkPathSuffix: "",
+		},
+
 		Serializer:          serializer.NewNegotiatedSerializer(),
-		ParameterCodec:      a.group.ParameterCodec,
-			Creater:         a.group.Creater,
-			Convertor:       a.group.Convertor,
-			Defaulter:       a.group.Defaulter,
-			Typer:           a.group.Typer,
-			UnsafeConvertor: a.group.UnsafeConvertor,
-			Authorizer:      a.group.Authorizer,
+		ParameterCodec:      scheme.ParameterCodec,
+		Creater:         nil,
+		Convertor:       scheme.Scheme,
+		Defaulter:       nil,
+		Typer:           nil,
+		UnsafeConvertor: nil,
+		Authorizer:      nil,
 
-			EquivalentResourceMapper: a.group.EquivalentResourceRegistry,
+		EquivalentResourceMapper: runtime.NewEquivalentResourceRegistry(),
 
-		// TODO: Check for the interface on storage
-			TableConvertor: tableProvider,
+		TableConvertor: nil,
 
-		// TODO: This seems wrong for cross-group subresources. It makes an assumption that a subresource and its parent are in the same group version. Revisit this.
-			Resource:    a.group.GroupVersion.WithResource(resource),
-			Subresource: subresource,
-			Kind:        fqKindToRegister,
+		Resource:   schema.GroupVersionResource{},
+		Subresource: "",
+		Kind:        schema.GroupVersionKind{},
 
-			HubGroupVersion: schema.GroupVersion{Group: fqKindToRegister.Group, Version: runtime.APIVersionInternal},
+		HubGroupVersion: schema.GroupVersion{},
 
-			MetaGroupVersion: metav1.SchemeGroupVersion,
+		MetaGroupVersion: metav1.SchemeGroupVersion,
 
-			MaxRequestBodyBytes: a.group.MaxRequestBodyBytes,
+		MaxRequestBodyBytes: int64(3 * 1024 * 1024),
 	}
-
+	return &requestScope
 }

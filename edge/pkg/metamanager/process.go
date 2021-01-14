@@ -3,7 +3,7 @@ package metamanager
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/storage/sqlite/imitator"
+	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/kubernetes/storage/sqlite/imitator"
 	"strings"
 	"time"
 

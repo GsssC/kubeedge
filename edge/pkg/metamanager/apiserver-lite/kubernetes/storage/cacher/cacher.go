@@ -2,7 +2,7 @@ package cacher
 
 import (
 	"fmt"
-	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/storage/sqlite"
+	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/kubernetes/storage/sqlite"
 	"github.com/kubeedge/kubeedge/pkg/apiserverlite"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"

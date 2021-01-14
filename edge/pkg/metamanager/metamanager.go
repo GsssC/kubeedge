@@ -2,7 +2,7 @@ package metamanager
 
 import (
 	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite"
-	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/storage/sqlite/imitator"
+	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/kubernetes/storage/sqlite/imitator"
 	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/dao/v2"
 	"time"
 
