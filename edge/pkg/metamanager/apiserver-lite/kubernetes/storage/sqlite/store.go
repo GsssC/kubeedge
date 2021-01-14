@@ -3,7 +3,9 @@ package sqlite
 import (
 	"context"
 	"fmt"
-	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/storage/sqlite/imitator"
+	"github.com/kubeedge/kubeedge/edge/pkg/metamanager/apiserver-lite/kubernetes/storage/sqlite/imitator"
+	"github.com/kubeedge/kubeedge/pkg/apiserverlite"
+	"github.com/kubeedge/kubeedge/pkg/apiserverlite/util"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/conversion"
@@ -81,10 +83,9 @@ func (s *store) List(ctx context.Context, key string, opts storage.ListOptions, 
 		return fmt.Errorf("need ptr to slice: %v", err)
 	}
 
-	resp,err := imitator.DefaultV2Client.List(context.TODO(),key)
+	resp,err := s.client.List(context.TODO(),key)
 
 	if err !=nil || len(*resp.Kvs) == 0{
-		//responsewriters.ErrorNegotiated(err,ls.NegotiatedSerializer,gv,w,req)
 		klog.Error(err)
 		return err
 	}
@@ -92,13 +93,17 @@ func (s *store) List(ctx context.Context, key string, opts storage.ListOptions, 
 	unstrList = listObj.(*unstructured.UnstructuredList)
 	for _,v := range *resp.Kvs {
 		var unstrObj unstructured.Unstructured
-		_,_,_= s.codec.Decode([]byte(v.Value),nil,&unstrObj)
+		err := runtime.DecodeInto(s.codec,[]byte(v.Value),&unstrObj)
+		if err !=nil{
+			return err
+		}
 		unstrList.Items=append(unstrList.Items, unstrObj)
 	}
 	rv := strconv.FormatUint(resp.Revision,10)
 	unstrList.SetResourceVersion(rv)
-	//unstrList.SetSelfLink(key)
-	//unstrList.SetGroupVersionKind(gv.WithKind(v2.UnsafeResourceToKind(gvr.Resource)+"List"))
+	unstrList.SetSelfLink(key)
+	gvr,_,_ := apiserverlite.ParseKey(key)
+	unstrList.SetGroupVersionKind(gvr.GroupVersion().WithKind(util.UnsafeResourceToKind(gvr.Resource)+"List"))
 	return nil
 }
 

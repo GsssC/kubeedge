@@ -15,6 +15,6 @@ func (hc *ChanReceiver) Receive(event watch.Event)error{
 	return nil
 }
 
-func NewChanReceiver(ch chan<- watch.Event) *ChanReceiver{
-	return &ChanReceiver{ch:ch}
+func NewChanReceiver(ch chan<- watch.Event) *ChanReceiver {
+	return &ChanReceiver{ch: ch}
 }
