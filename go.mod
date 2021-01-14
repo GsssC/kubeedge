@@ -64,6 +64,7 @@ require (
 	k8s.io/component-base v0.19.3
 	k8s.io/cri-api v0.19.3
 	k8s.io/csi-translation-lib v0.19.3
+	k8s.io/klog v0.3.1
 	k8s.io/klog/v2 v2.2.0
 	k8s.io/kube-openapi v0.0.0-20200805222855-6aeccd4b50c6
 	k8s.io/kube-scheduler v0.19.3 // indirect

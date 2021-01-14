@@ -61,12 +61,62 @@ func (s *store) watch(ctx context.Context, key string, opts storage.ListOptions,
 
 //TODO:Shao
 func (s *store) Get(ctx context.Context, key string, opts storage.GetOptions, objPtr runtime.Object) error {
-	panic("Get implement me")
+	klog.Infof("get a req, key:=%v",key)
+	v, err := conversion.EnforcePtr(objPtr)
+	if err != nil || v.Kind() != reflect.Slice {
+		return fmt.Errorf("need ptr to slice: %v", err)
+	}
+
+	resp,err := imitator.DefaultV2Client.Get(context.TODO(),key)
+
+	if err !=nil || len(*resp.Kvs) == 0{
+		//responsewriters.ErrorNegotiated(err,ls.NegotiatedSerializer,gv,w,req)
+		klog.Error(err)
+		return err
+	}
+	var unstrObj *unstructured.Unstructured
+	unstrObj = objPtr.(*unstructured.Unstructured)
+
+	kv := (*(resp.Kvs))[0]
+	_,_,_= s.codec.Decode([]byte(kv.Value),nil,unstrObj)
+
+	rv := strconv.FormatUint(resp.Revision,10)
+	unstrObj.SetResourceVersion(rv)
+	//unstrList.SetSelfLink(key)
+	//unstrList.SetGroupVersionKind(gv.WithKind(v2.UnsafeResourceToKind(gvr.Resource)+"List"))
+	return nil
 }
 
 //TODO:Shao
 func (s *store) GetToList(ctx context.Context, key string, opts storage.ListOptions, listObj runtime.Object) error {
-	panic("GetToList implement me")
+	klog.Infof("get a req then add to list, key:=%v",key)
+	listPtr, err := meta.GetItemsPtr(listObj)
+	if err != nil {
+		return err
+	}
+	v, err := conversion.EnforcePtr(listPtr)
+	if err != nil || v.Kind() != reflect.Slice {
+		return fmt.Errorf("need ptr to slice: %v", err)
+	}
+
+	resp,err := imitator.DefaultV2Client.List(context.TODO(),key)
+	if err != nil {
+		klog.Error(err)
+		return err
+	}
+
+	var unstrList *unstructured.UnstructuredList
+	unstrList = listObj.(*unstructured.UnstructuredList)
+	if len(*resp.Kvs) > 0 {
+		var unstrObj unstructured.Unstructured
+		_,_,_= s.codec.Decode([]byte((*resp.Kvs)[0].Value),nil,&unstrObj)
+		unstrList.Items=append(unstrList.Items, unstrObj)
+	}
+
+	// update version with cluster level revision
+	rv := strconv.FormatUint(resp.Revision,10)
+	unstrList.SetResourceVersion(rv)
+	return nil
 }
 
 //TODO:Shao

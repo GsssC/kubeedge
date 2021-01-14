@@ -15,7 +15,6 @@ import (
 	"github.com/kubeedge/beehive/pkg/core"
 	"github.com/kubeedge/kubeedge/edge/cmd/edgecore/app/options"
 	"github.com/kubeedge/kubeedge/edge/pkg/common/dbm"
-	"github.com/kubeedge/kubeedge/edge/pkg/edgehub"
 	"github.com/kubeedge/kubeedge/edge/pkg/metamanager"
 	"github.com/kubeedge/kubeedge/edge/test"
 	"github.com/kubeedge/kubeedge/pkg/apis/componentconfig/edgecore/v1alpha1"
@@ -142,7 +141,7 @@ func environmentCheck() error {
 func registerModules(c *v1alpha1.EdgeCoreConfig) {
 	//devicetwin.Register(c.Modules.DeviceTwin, c.Modules.Edged.HostnameOverride)
 	//edged.Register(c.Modules.Edged)
-	edgehub.Register(c.Modules.EdgeHub, c.Modules.Edged.HostnameOverride)
+	//edgehub.Register(c.Modules.EdgeHub, c.Modules.Edged.HostnameOverride)
 	//eventbus.Register(c.Modules.EventBus, c.Modules.Edged.HostnameOverride)
 	//edgemesh.Register(c.Modules.EdgeMesh)
 	metamanager.Register(c.Modules.MetaManager)

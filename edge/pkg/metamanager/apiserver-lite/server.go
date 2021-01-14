@@ -86,7 +86,8 @@ func(ls *LiteServer)BuildBasicHandler()http.Handler{
 		if ok && reqInfo.IsResourceRequest{
 			switch{
 			case reqInfo.Verb == "get":
-				ls.processRead(w,req)
+				ls.cacherRead(w,req)
+				//ls.processRead(w,req)
 			case reqInfo.Verb == "list":
 				ls.cacherList(w,req)
 				//ls.processList(w,req)
@@ -103,6 +104,33 @@ func(ls *LiteServer)BuildBasicHandler()http.Handler{
 	})
 	return h
 }
+
+// shao
+func(ls *LiteServer)cacherRead(w http.ResponseWriter,req *http.Request){
+	info , _ := apirequest.RequestInfoFrom(req.Context())
+	key,err:= apiserverlite.KeyFuncReq(req.Context(),"")
+	if err !=nil{
+		responsewriters.InternalError(w,req,err)
+		return
+	}
+	gv := schema.GroupVersion{
+		Group: info.APIGroup,
+		Version: info.APIVersion,
+	}
+	unstrObj := new(unstructured.Unstructured)
+	// ???
+	opts := storage.GetOptions{ResourceVersion:"0",IgnoreNotFound: true}
+	err = ls.Cacher.Get(req.Context(),key,opts,unstrObj)
+	if err !=nil{
+		klog.Error(err)
+	}
+	unstrObj.SetSelfLink(info.Path)
+	unstrObj.SetGroupVersionKind(gv.WithKind(util.UnsafeResourceToKind(info.Resource)+"Get"))
+	responsewriters.WriteObjectNegotiated(ls.NegotiatedSerializer,negotiation.DefaultEndpointRestrictions,gv,w,req,http.StatusOK,unstrObj)
+
+}
+
+
 
 func(ls *LiteServer)cacherWatch(w http.ResponseWriter,req *http.Request){
 	key,err:= apiserverlite.KeyFuncReq(req.Context(),"")
