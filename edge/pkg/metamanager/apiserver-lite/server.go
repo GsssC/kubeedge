@@ -83,6 +83,7 @@ func (ls *LiteServer)Start(stopChan <-chan struct{}){
 
 func(ls *LiteServer)BuildBasicHandler()http.Handler{
 	listHandler := ls.Factory.List()
+	getHandler := ls.Factory.Get()
 	h:= http.HandlerFunc(func(w http.ResponseWriter, req *http.Request){
 		ctx := req.Context()
 		reqInfo , ok := apirequest.RequestInfoFrom(ctx)
@@ -90,7 +91,9 @@ func(ls *LiteServer)BuildBasicHandler()http.Handler{
 		if ok && reqInfo.IsResourceRequest{
 			switch{
 			case reqInfo.Verb == "get":
-				ls.cacherRead(w,req)
+				//ls.cacherRead(w,req)
+				getHandler.ServeHTTP(w,req)
+				// TODO:shao, replace with getHandler.ServerHttp
 				//ls.processRead(w,req)
 			case reqInfo.Verb == "list":
 				listHandler.ServeHTTP(w,req)

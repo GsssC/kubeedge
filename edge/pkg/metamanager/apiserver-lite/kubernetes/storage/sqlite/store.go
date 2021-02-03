@@ -61,18 +61,13 @@ func (s *store) watch(ctx context.Context, key string, opts storage.ListOptions,
 	return s.watcher.Watch(ctx, key, int64(rev), recursive, opts.Predicate)
 }
 
+
 //TODO:Shao
 func (s *store) Get(ctx context.Context, key string, opts storage.GetOptions, objPtr runtime.Object) error {
 	klog.Infof("get a req, key:=%v",key)
-	v, err := conversion.EnforcePtr(objPtr)
-	if err != nil || v.Kind() != reflect.Slice {
-		return fmt.Errorf("need ptr to slice: %v", err)
-	}
-
-	resp,err := imitator.DefaultV2Client.Get(context.TODO(),key)
+	resp,err := s.client.Get(context.TODO(),key)
 
 	if err !=nil || len(*resp.Kvs) == 0{
-		//responsewriters.ErrorNegotiated(err,ls.NegotiatedSerializer,gv,w,req)
 		klog.Error(err)
 		return err
 	}
@@ -80,12 +75,16 @@ func (s *store) Get(ctx context.Context, key string, opts storage.GetOptions, ob
 	unstrObj = objPtr.(*unstructured.Unstructured)
 
 	kv := (*(resp.Kvs))[0]
-	_,_,_= s.codec.Decode([]byte(kv.Value),nil,unstrObj)
+	err = runtime.DecodeInto(s.codec,[]byte(kv.Value),unstrObj)
+	if err !=nil{
+		return err
+	}
 
 	rv := strconv.FormatUint(resp.Revision,10)
 	unstrObj.SetResourceVersion(rv)
-	//unstrList.SetSelfLink(key)
-	//unstrList.SetGroupVersionKind(gv.WithKind(v2.UnsafeResourceToKind(gvr.Resource)+"List"))
+	unstrObj.SetSelfLink(key)
+	gvr,_,_ := apiserverlite.ParseKey(key)
+	unstrObj.SetGroupVersionKind(gvr.GroupVersion().WithKind(util.UnsafeResourceToKind(gvr.Resource)+"Get"))
 	return nil
 }
 
@@ -101,7 +100,7 @@ func (s *store) GetToList(ctx context.Context, key string, opts storage.ListOpti
 		return fmt.Errorf("need ptr to slice: %v", err)
 	}
 
-	resp,err := imitator.DefaultV2Client.List(context.TODO(),key)
+	resp,err := s.client.List(context.TODO(),key)
 	if err != nil {
 		klog.Error(err)
 		return err
@@ -111,13 +110,19 @@ func (s *store) GetToList(ctx context.Context, key string, opts storage.ListOpti
 	unstrList = listObj.(*unstructured.UnstructuredList)
 	if len(*resp.Kvs) > 0 {
 		var unstrObj unstructured.Unstructured
-		_,_,_= s.codec.Decode([]byte((*resp.Kvs)[0].Value),nil,&unstrObj)
+		err = runtime.DecodeInto(s.codec,[]byte((*resp.Kvs)[0].Value),&unstrObj)
+		if err !=nil{
+			return err
+		}
 		unstrList.Items=append(unstrList.Items, unstrObj)
 	}
 
 	// update version with cluster level revision
 	rv := strconv.FormatUint(resp.Revision,10)
 	unstrList.SetResourceVersion(rv)
+	unstrList.SetSelfLink(key)
+	gvr,_,_ := apiserverlite.ParseKey(key)
+	unstrList.SetGroupVersionKind(gvr.GroupVersion().WithKind(util.UnsafeResourceToKind(gvr.Resource)+"GetToList"))
 	return nil
 }
 
@@ -132,7 +137,6 @@ func (s *store) List(ctx context.Context, key string, opts storage.ListOptions, 
 	if err != nil || v.Kind() != reflect.Slice {
 		return fmt.Errorf("need ptr to slice: %v", err)
 	}
-
 	resp,err := s.client.List(context.TODO(),key)
 
 	if err !=nil || len(*resp.Kvs) == 0{
