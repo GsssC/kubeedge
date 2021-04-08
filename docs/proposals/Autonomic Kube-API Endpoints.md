@@ -30,7 +30,7 @@ Informer是旨在减轻大规模集群下API Server的Read类请求(Get、List�
 - 支持内置和自定义API。Support both build-in and CRD API
 - 支持请求带选项。
 ## Architecture
-
+![architecture](../images/Autonomic Kube-API Endpoint/architecture.png)
 ## Detail of call
 
 ## Appendix
