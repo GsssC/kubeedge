@@ -2,7 +2,7 @@
 ## Overview
 边缘的Kubernetes客户端(以下称Kube Client, 典型有Kubelet、Kubeproxy、CNI-Plugin等)直连云中心的API Server, 会因为网络波动产生诸如重启内存数据丢失, Informer异常relist等问题，影响边缘业务连续性，增大网络带宽消耗和限制节点规模。
 
-Autonomic Kube-API Endpoint(以下简称AKE)特性是为了满足边缘Kube Client的[Kube API](https://kubernetes.io/zh/docs/concepts/overview/kubernetes-api/)访问请求，而在边缘设立的一个类API Server的Kube API访问端点，可以视为一个小型化的API Server，提供可靠、稳定的Kube API请求处理服务。其根据Kube API请求自主地向云端申请下发相关Kube API对象，持久化至边缘数据库后再响应给Kube Client。除了能在网络正常时提供所有Read类(Get、List、Watch)和Write类(Create、Delete、Update、Patch)Kube API请求，其还能在断网期间根据边缘持久化数据库，持续服务边缘客户端的Read类Kube API请求，在重连后自动由云向边同步Kube API数据。在未来，也考虑开放断网时的Write类请求处理能力，断网重连后由边向云同步断网期间边缘数据库中Kube API对象的更改，增强KubeEdge的离线自治能力。
+Autonomic Kube-API Endpoint(以下简称AKE)特性是为了满足边缘Kube Client的[Kube API](https://kubernetes.io/zh/docs/concepts/overview/kubernetes-api/)访问请求，而在边缘设立的一个类API Server的Kube API访问端点，提供可靠、稳定的Kube API请求处理服务。其根据Kube API请求自主地向云端申请下发相关Kube API对象，持久化至边缘数据库后再响应给Kube Client。除了能在网络正常时提供所有Read类(Get、List、Watch)和Write类(Create、Delete、Update、Patch)Kube API请求，其还能在断网期间根据边缘持久化数据库，持续服务边缘客户端的Read类Kube API请求，在重连后自动由云向边同步Kube API数据。在未来，也考虑开放断网时的Write类请求处理能力，断网重连后由边向云同步断网期间边缘数据库中Kube API对象的更改，增强KubeEdge的离线自治能力。
 
 在正式引入AKE的实现细节前，我们需要了解探讨一些背景问题，这决定了AKE特性的架构设计。
 ## Backgroud
@@ -30,9 +30,61 @@ Informer是旨在减轻大规模集群下API Server的Read类请求(Get、List�
 - 支持内置和自定义API。Support both build-in and CRD API
 - 支持请求带选项。
 ## Architecture
-![architecture](../images/Autonomic Kube-API Endpoint/architecture.png)
-## Detail of call
+![architecture](../images/ake/arch.svg)
+### AKE at Cloud(Dynamic Controller)
+#### Application Center
+Application(以下简称App)是边缘发向云端，用以申请相关Kube API对象下发的结构体，简化了原生Kube API的HTTP请求报文，只保留了最为关键的信息如API所属Group Version Resource等，定义如下:
+```go
+type Application struct {
+	ID       string
+	Key      string // group version resource namespaces name
+	Verb     applicationVerb
+	Nodename string
+	Status   applicationStatus
+	Reason   string // simply describe why in this status
+	Option   []byte // record kube api option such as list option
+	ReqBody  []byte // normally a k8s api obj
+	RespBody []byte // normally a k8s api obj or an api error
+}
+```
 
-## Appendix
-### 
-## Reference
+Center在接收到非Watch App时，通过调用Dynamic Kube Client将App重译成Kube API请求，转发API Server处理并将返回的Kube API对象写入RespBody。然后申请被回传至边缘App Agent，解码取出Kube API对象。目前默认采用json对ReqBody和RespBody进行编解码，后续考虑支持protobuf。
+#### Enhanced Informer and it's Factory
+Kubernetes官方Informer通过回调函数将事件通知给调用方，如下代码，回调函数无法热更改，在Informer初始化时便需要指定，并且无法根据label和field筛查事件。
+```go
+	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			handleAdd(watch.Added, obj)
+		},
+		UpdateFunc: func(oldObj, obj interface{}) {
+			handlerUpdate(watch.Modified, obj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			handlerDelete(watch.Deleted, obj)
+		},
+	})
+```
+Enhanced Informer支持热注册和热注销多个Listener。Listener是Informer的观察者，由Kube API Watch生成，并根据请求条件(labels和field等)筛查出对应Kube API事件，通过[可靠消息传输模型](./reliable-message-delivery.md)持续发向边缘Rest Storage。发送失败的事件，会由Sync Controller重新生成并重发。
+#### Sync Controller
+参考[可靠消息传输模型](./reliable-message-delivery.md)
+### AKE at Edge
+#### Meta Server
+Meta Server是一个HTTP Server，主要复用[Kubernetes的代码](https://github.com/kubernetes/kubernetes/tree/master/staging/src/k8s.io/apiserver/pkg/endpoints/handlers)，将HTTP形式的Kube API请求，转为对后端Rest Storage的调用。
+#### AKE Client
+AKE Client is an implemention of [clientset.Interface](https://github.com/kubernetes/kubernetes/blob/c90330d8f4ca9fd980df24044960a4d8bb28a780/staging/src/k8s.io/client-go/kubernetes/clientset.go#L70), 便于进程内部其余模块访问Rest Storage。
+#### Rest Storage
+Rest Storage 是Kube API请求的处理者，处理Read类请求时直接依赖于Local Storage。主要有以下步骤
+1. 向云端发送申请并获取响应
+2. 同步更改本地数据库
+3. 调用本地数据库对应接口
+4. 响应请求
+
+第1步和第2步其实是触发了云边数据同步，主要有两类
+- 单次同步，由Get和List Application触发
+- 持续性同步，由Watch Application触发
+
+云边数据同步失败，并不会终止请求处理，只是响应的Kube API对象的版本可能对比云端较旧。这在watch请求处理中十分重要，解耦了请求处理同云边网络的直接依赖，避免云边网络对Watch长连接的影响，从而避免Informer重同步异常。
+#### Local Storage 
+负责将传入Kube API对象编码后存入Sqlite，并且由于Sqlite原生不支持Watch语义，需要在此实现Watch接口的处理，在数据变更时告知调用者。
+#### Application Agent
+Application Agent由Rest Store调用生成Application，并发向云端以获取对应Kube API对象。特别地，其会归并多个同类请求以减小网络带宽。例如在/api/v1/pods的List请求的处理生命周期内，无论接收到多少个同类/api/v1/pods请求，都将只生成一个Application，并根据此Application的结果响应上述多个请求。
