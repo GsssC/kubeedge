@@ -286,7 +286,7 @@ type EdgeHub struct {
 type EdgeHubQUIC struct {
 	// Enable indicates whether enable this protocol
 	// default false
-	Enable bool `json:"enable,omitempty"`
+	Enable bool `json:"enable"`
 	// HandshakeTimeout indicates hand shake timeout (second)
 	// default 30
 	HandshakeTimeout int32 `json:"handshakeTimeout,omitempty"`
@@ -305,7 +305,7 @@ type EdgeHubQUIC struct {
 type EdgeHubWebSocket struct {
 	// Enable indicates whether enable this protocol
 	// default true
-	Enable bool `json:"enable,omitempty"`
+	Enable bool `json:"enable"`
 	// HandshakeTimeout indicates handshake timeout (second)
 	// default  30
 	HandshakeTimeout int32 `json:"handshakeTimeout,omitempty"`
@@ -360,7 +360,7 @@ type EventBus struct {
 type EventBusTLS struct {
 	// Enable indicates whether enable tls connection
 	// default false
-	Enable bool `json:"enable,omitempty"`
+	Enable bool `json:"enable"`
 	// TLSMqttCAFile sets ca file path
 	// default "/etc/kubeedge/ca/rootCA.crt"
 	TLSMqttCAFile string `json:"tlsMqttCAFile,omitempty"`

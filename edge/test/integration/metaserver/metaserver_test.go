@@ -19,7 +19,7 @@ var _ = Describe("Test MetaServer", func() {
 				coreAPIPrefix       = "api"
 				coreAPIGroupVersion = schema.GroupVersion{Group: "", Version: "v1"}
 				prefix              = "apis"
-				testGroupVersion    = schema.GroupVersion{Group: "test-group", Version: "test-version"}
+				//testGroupVersion    = schema.GroupVersion{Group: "test-group", Version: "test-version"}
 			)
 			type T struct {
 				Method string
